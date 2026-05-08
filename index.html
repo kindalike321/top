@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>탑 후픽 추천받아요1</title>
+    <title>탑 후픽 추천받아요2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #121212; color: #e0e0e0; }
@@ -26,11 +26,20 @@
 <div id="results"></div>
 
 <script>
+// =============================================================================================
+// 1. 챔피언 데이터
+// =============================================================================================
 const my_champions = {
     "AD": ["가렌", "다리우스", "나서스", "베인", "세트", "스카너", "암베사", "우르곳", "이렐리아", "일라오이", "자르반", "잭스"],
     "AP": ["그웬", "라이즈", "럼블", "말파이트", "모데카이저", "바루스", "브랜드", "신지드", "에코", "오로라", "케넨", "티모"]
 };
 const my_full_pool = [...my_champions.AD, ...my_champions.AP];
+
+//상대 챔수: 
+//내ad 후보: 나피리, 올라프, 바이
+//내ap 후보: 블라디, 카이사, 트페
+//새챔 후보: 
+//비주류 후보: 
 
 const enemy_champions = [   
     "가렌", "갱플랭크", "그라가스", "그웬", "나르", "나서스", "다리우스", "라이즈", "럼블", "레넥톤", "렝가", "리븐",
@@ -42,6 +51,9 @@ const enemy_champions = [
     "쉬바나", "스몰더", "아크샨", "제드", "카르마", "카이사", "트페", "피들스틱"
 ];
 
+// =============================================================================================
+// 2. 데이터 로드
+// =============================================================================================
 let banData = {};
 let preference = {}; 
 
@@ -51,10 +63,12 @@ Papa.parse("banData - 시트1.csv", {
         const data = results.data;
         if (!data || data.length < 1) return;
         const headers = data[0].map(h => h ? h.trim() : "");
+
         for (let i = 1; i < data.length; i++) {
             const row = data[i];
             const firstCol = row[0] ? row[0].trim() : "";
             if (!firstCol) continue;
+
             if (firstCol === "선호도") {
                 my_full_pool.forEach(name => {
                     const idx = headers.indexOf(name);
@@ -74,6 +88,9 @@ Papa.parse("banData - 시트1.csv", {
     }
 });
 
+// =============================================================================================
+// 4. 초성 처리
+// =============================================================================================
 const CHOSUNG_LIST = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 
 function get_chosung(word) {
@@ -97,6 +114,9 @@ function resolve_input(user_input) {
     return null;
 }
 
+// =============================================================================================
+// 5. 점수 -> 별 변환
+// =============================================================================================
 function score_to_stars(score, max_stars = 2.0) {
     let stars = Math.round(((score - 1) / (3 - 1)) * (max_stars * 3.5)) + 1;
     return "★".repeat(Math.max(1, stars));
@@ -118,12 +138,15 @@ inputEl.addEventListener('input', (e) => {
     const raw_inputs = e.target.value.split(/\s+/).filter(x => x.trim());
     let enemies = [];
     let warnings = [];
+
     raw_inputs.forEach(r => {
         let resolved = resolve_input(r);
         if (resolved) enemies.push(resolved);
         else warnings.push(`'${r}' 는 제대로 된 이름이 아니에요 ;ㅅ; `);
     });
+
     warningEl.innerHTML = warnings.join("<br>");
+
     if (enemies.length === 0) { resultEl.innerHTML = ""; return; }
 
     let html = "<hr><h2>챔프별 카운터 추천</h2>";
@@ -180,4 +203,4 @@ inputEl.addEventListener('input', (e) => {
 });
 </script>
 </body>
-</html>
+</html>s
