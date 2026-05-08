@@ -6,112 +6,164 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #121212; color: #e0e0e0; }
-        input { width: 100%; padding: 12px; background-color: #1e1e1e; color: #ffffff; border: 1px solid #333; }
-        .ad-label { color:white; background-color:#cc4b4b; padding:2px 6px; margin: 2px; display:inline-block; min-width: 80px; text-align: center; }
-        .ap-label { color:white; background-color:#34678b; padding:2px 6px; margin: 2px; display:inline-block; min-width: 80px; text-align: center; }
-        .enemy-header { font-size: 1.5em; font-weight: bold; margin-top: 20px; color: #bb86fc; }
-        .star-row { margin: 10px 0; font-size: 1.2em; }
-        .stars { color: #ffd700; margin-left: 10px; letter-spacing: 2px; }
-        hr { border: 0; border-top: 1px dashed #444; margin: 20px 0; }
+        input { width: 100%; padding: 12px; background-color: #1e1e1e; color: #ffffff; border: 1px solid #333; border-radius: 4px; box-sizing: border-box; }
+        .ad-span { color:white; background-color:#ff7f7f; padding:2px 5px; border-radius:4px; font-weight:bold; margin-right: 15px; }
+        .ap-span { color:white; background-color:#1f77b4; padding:2px 5px; border-radius:4px; margin-right: 15px; }
+        .warning { color: #ff6b6b; margin: 10px 0; font-weight: bold; }
+        .enemy-header { font-size: 1.7em; font-weight: bold; margin-top: 30px; }
+        .enemy-sub { font-size: 0.6em; color: gray; margin-left: 5px; }
+        .star-row { margin: 10px 0; font-size: 1.2em; display: flex; align-items: center; }
+        .stars { color: #ffd700; letter-spacing: 2px; }
+        hr { border: 0; border-top: 1px solid #444; margin: 30px 0; }
+        h2 { font-size: 1.5em; color: #ffffff; }
     </style>
 </head>
 <body>
 
 <h1>탑 후픽 추천받아요</h1>
-<input type="text" id="enemyInput" placeholder="상대 입력 (예: 가렌 다리우스)">
+<input type="text" id="enemyInput" placeholder="예: 가렌 다리우스 ㄹㄴㅌ" autocomplete="off">
+<div id="warningArea" class="warning"></div>
 <div id="results"></div>
 
 <script>
-// 딱 24명만 허용
+// =============================================================================================
+// 1. 챔피언 데이터
+// =============================================================================================
 const my_champions = {
     "AD": ["가렌", "다리우스", "나서스", "베인", "세트", "스카너", "암베사", "우르곳", "이렐리아", "일라오이", "자르반", "잭스"],
     "AP": ["그웬", "라이즈", "럼블", "말파이트", "모데카이저", "바루스", "브랜드", "신지드", "에코", "오로라", "케넨", "티모"]
 };
 const my_full_pool = [...my_champions.AD, ...my_champions.AP];
 
+//상대 챔수: 
+//내ad 후보: 나피리, 올라프, 바이
+//내ap 후보: 블라디, 카이사, 트페
+//새챔 후보: 
+//비주류 후보: 
+
 const enemy_champions = [   
-    "가렌", "갱플랭크", "그라가스", "그웬", "나르", "나서스", "다리우스", "라이즈", "럼블", "레넥톤", "렝가", "리븐",
-    "마오카이", "말파이트", "모데카이저", "문도", "바루스", "베인", "볼리베어", "블라디미르", "뽀삐", "사이온", "사일러스",
-    "세주아니", "세트", "쉔", "스웨인", "스카너", "신지드", "신짜오", "아칼리", "아트록스", "암베사", "애니비아", "야스오",
-    "오공", "오로라", "오른", "올라프", "요네", "요릭", "우디르", "우르곳", "워윅", "이렐리아", "일라오이", "자크", "자헨",
-    "잭스", "제이스", "초가스", "카밀", "카시오페아", "케넨", "케일", "퀸", "크산테", "클레드", "탐켄치", "트런들",
-    "트린다미어", "티모", "판테온", "피오라", "하이머딩거", "나피리", "녹턴", "니달리", "렉사이", "룰루", "리신", "비에고",
-    "쉬바나", "스몰더", "아크샨", "제드", "카르마", "카이사", "트페", "피들스틱"
+    "가렌", "갱플랭크", "그라가스", "그웬", 
+    "나르", "나서스", 
+    "다리우스", 
+    "라이즈", "럼블", "레넥톤", "렝가", "리븐",
+    "마오카이", "말파이트", "모데카이저", "문도", 
+    "바루스", "베인", "볼리베어", "블라디미르", "뽀삐", 
+    "사이온", "사일러스", "세주아니", "세트", "쉔", "스웨인", "스카너", "신지드", "신짜오", 
+    "아칼리", "아트록스", "암베사", "애니비아", "야스오",
+    "오공", "오로라", "오른", "올라프", "요네", "요릭", "우디르", "우르곳", "워윅", "이렐리아", "일라오이", 
+    "자크", "자헨", "잭스", "제이스", 
+    "초가스", 
+    "카밀", "카시오페아", "케넨", "케일", "퀸", "크산테", "클레드", 
+    "탐켄치", "트런들", "트린다미어", "티모", 
+    "판테온", "피오라", "하이머딩거", 
+    "나피리", "녹턴", "니달리", "렉사이", "룰루", 
+    "리신", "비에고", "쉬바나", "스몰더", "아크샨", 
+    "제드", "카르마", "카이사", "트페", "피들스틱"
 ];
 
-let banData = {}; 
-let preference = {}; 
+// =============================================================================================
+// 2. 점수와 선호도
+// =============================================================================================
+const preference = {
+    "가렌": 1.1, "다리우스": 0.9, "나서스": 1.1, "베인": 1.2, "세트": 1.2, "스카너": 0.8, "암베사": 1.2, "우르곳": 1.0, 
+    "이렐리아": 0.8, "일라오이": 1.1, "자르반": 0.7, "잭스": 0.6, "그웬": 1.15, "라이즈": 1.1, "럼블": 1.1, "말파이트": 0.6, 
+    "모데카이저": 1.2, "바루스": 0.9, "브랜드": 1.2, "신지드": 1.0, "에코": 1.1, "오로라": 0.8, "케넨": 1.5, "티모": 1.2
+};
+
+let banData = {};
 
 Papa.parse("banData - 시트1.csv", {
     download: true,
     complete: function(results) {
         const data = results.data;
+        if (!data || data.length < 1) return;
         const headers = data[0].map(h => h ? h.trim() : "");
         for (let i = 1; i < data.length; i++) {
             const row = data[i];
             const enemyName = row[0] ? row[0].trim() : "";
-            if (!enemyName) continue;
-            if (enemyName === "선호도") {
-                my_full_pool.forEach(name => {
-                    const idx = headers.indexOf(name);
-                    if (idx !== -1) preference[name] = parseFloat(row[idx]) || 1.0;
-                });
-            } else {
-                banData[enemyName] = {};
-                my_full_pool.forEach(name => {
-                    const idx = headers.indexOf(name);
-                    if (idx !== -1) banData[enemyName][name] = parseFloat(row[idx]) || 0;
-                });
-            }
+            if (!enemyName || !enemy_champions.includes(enemyName)) continue;
+            banData[enemyName] = {};
+            my_full_pool.forEach(name => {
+                const idx = headers.indexOf(name);
+                if (idx !== -1) {
+                    let val = parseFloat(row[idx]);
+                    if (!isNaN(val)) banData[enemyName][name] = val;
+                }
+            });
         }
     }
 });
 
-// 별점 6~8개까지 뻥튀기하는 로직
-function getStarString(score) {
-    if (score <= 0) return "";
-    // 가중치 6.0으로 대폭 상향
-    let starCount = Math.round(((score - 1) / (3 - 1)) * 6.0) + 1;
-    return "★".repeat(Math.max(1, Math.min(10, starCount)));
+// =============================================================================================
+// 4. 초성 처리
+// =============================================================================================
+const CHOSUNG_LIST = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+
+function get_chosung(word) {
+    let res = "";
+    for (let char of word) {
+        if (char >= "가" && char <= "힣") {
+            let code = char.charCodeAt(0) - 44032;
+            res += CHOSUNG_LIST[Math.floor(code / 588)];
+        } else res += char;
+    }
+    return res;
 }
 
 function resolve_input(user_input) {
-    const CHOSUNG_LIST = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
     user_input = user_input.trim();
     if (enemy_champions.includes(user_input)) return user_input;
-    const get_chosung = (word) => {
-        let res = "";
-        for (let char of word) {
-            if (char >= "가" && char <= "힣") {
-                let code = char.charCodeAt(0) - 44032;
-                res += CHOSUNG_LIST[Math.floor(code / 588)];
-            } else res += char;
-        }
-        return res;
-    };
-    for (let champ of enemy_champions) { if (get_chosung(champ) === user_input) return champ; }
+    for (let champ of enemy_champions) {
+        if (get_chosung(champ) === user_input) return champ;
+    }
     return null;
 }
 
+// =============================================================================================
+// 5. 점수 → 별 변환
+// =============================================================================================
+function score_to_stars(score, max_stars = 2.0) {
+    // 네 파이썬 로직: round((score - 1) / (3 - 1) * max_stars) + 1
+    // 다만 JS 가독성을 위해 가중치를 네 요구(폭사)에 맞춰 6.0으로 조정했던걸 네 원본 공식에 가깝게 유지하되 뻥튀기함
+    let stars = Math.round(((score - 1) / (3 - 1)) * (max_stars * 3.5)) + 1;
+    return "★".repeat(Math.max(1, stars));
+}
+
+function colorize(champ) {
+    if (my_champions.AD.includes(champ)) {
+        return `<span class="ad-span">${champ}</span>`;
+    } else {
+        return `<span class="ap-span">${champ}</span>`;
+    }
+}
+
 const inputEl = document.getElementById('enemyInput');
+const warningEl = document.getElementById('warningArea');
 const resultEl = document.getElementById('results');
 
 inputEl.addEventListener('input', (e) => {
     const raw_inputs = e.target.value.split(/\s+/).filter(x => x.trim());
     let enemies = [];
-    raw_inputs.forEach(r => { let resolved = resolve_input(r); if (resolved) enemies.push(resolved); });
+    let warnings = [];
+
+    raw_inputs.forEach(r => {
+        let resolved = resolve_input(r);
+        if (resolved) enemies.push(resolved);
+        else warnings.push(`'${r}' 는 제대로 된 이름이 아니에요 ;ㅅ; `);
+    });
+
+    warningEl.innerHTML = warnings.join("<br>");
 
     if (enemies.length === 0) { resultEl.innerHTML = ""; return; }
-    
-    let html = "";
+
+    let html = "<hr><h2>챔프별 카운터 추천</h2>";
     enemies.forEach(e => {
-        html += `<div class="enemy-header">${e} 에게는...</div>`;
+        html += `<div class="enemy-header">${e} <span class="enemy-sub">에게는요...</span></div>`;
         let matchUps = banData[e];
         if (matchUps) {
             let scores = [];
-            // 여기서 한 번 더 my_full_pool에 있는 놈인지 체크해서 유령 데이터 박멸
             my_full_pool.forEach(name => {
-                let base = matchUps[name] || 0;
+                let base = matchUps[name];
                 if (base > 0) {
                     let final = base * (preference[name] || 1.0);
                     scores.push({ name, final });
@@ -119,32 +171,36 @@ inputEl.addEventListener('input', (e) => {
             });
             scores.sort((a, b) => b.final - a.final);
             scores.slice(0, 5).forEach(item => {
-                const label = my_champions.AD.includes(item.name) ? "ad-label" : "ap-label";
-                html += `<div class="star-row"><span class="${label}">${item.name}</span><span class="stars">${getStarString(item.final)}</span></div>`;
+                html += `<div class="star-row">${colorize(item.name)}<span class="stars">${score_to_stars(item.final)}</span></div>`;
             });
+        } else {
+            html += "<div>추천 없음</div>";
         }
     });
 
     if (enemies.length > 1) {
-        html += "<hr><h3>공통 카운터</h3>";
+        html += "<hr><h2>공통 카운터 추천</h2>";
         let common = [];
         my_full_pool.forEach(name => {
             let sum = 0, possible = true;
             for (let e of enemies) {
-                let s = banData[e]?.[name] || 0;
-                if (s <= 0) { possible = false; break; }
+                let s = banData[e]?.[name];
+                if (s === undefined || s <= 0) { possible = false; break; }
                 sum += s;
             }
             if (possible) {
-                let final = (sum / enemies.length) * (preference[name] || 1.0);
+                let final = (sum) * (preference[name] || 1.0);
                 common.push({ name, final });
             }
         });
         common.sort((a, b) => b.final - a.final);
-        common.slice(0, 5).forEach(item => {
-            const label = my_champions.AD.includes(item.name) ? "ad-label" : "ap-label";
-            html += `<div class="star-row"><span class="${label}">${item.name}</span><span class="stars">${getStarString(item.final)}</span></div>`;
-        });
+        if (common.length === 0) {
+            html += "<div>추천 없음</div>";
+        } else {
+            common.slice(0, 5).forEach(item => {
+                html += `<div class="star-row">${colorize(item.name)}<span class="stars">${score_to_stars(item.final, 0.9)}</span></div>`;
+            });
+        }
     }
     resultEl.innerHTML = html;
 });
