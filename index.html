@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>TOP</title>
+    <title>탑 후픽 추천받아요</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #121212; color: #ffffff; }
@@ -59,16 +59,24 @@ Papa.parse("banData - 시트1.csv", {
         const data = results.data;
         if (!data || data.length < 1) return;
         const headers = data[0].map(h => h ? h.trim() : "");
+
+        for (let i = 1; i < data.length; i++) {
+            const firstCol = data[i][0] ? data[i][0].trim() : "";
+            if (firstCol.includes("선호도")) {
+                my_full_pool.forEach(name => {
+                    const idx = headers.indexOf(name);
+                    if (idx !== -1) {
+                        let val = parseFloat(data[i][idx]);
+                        preference[name] = isNaN(val) ? 1.0 : val;
+                    }
+                });
+            }
+        }
+
         for (let i = 1; i < data.length; i++) {
             const row = data[i];
             const firstCol = row[0] ? row[0].trim() : "";
-            if (!firstCol) continue;
-            if (firstCol === "선호도") {
-                my_full_pool.forEach(name => {
-                    const idx = headers.indexOf(name);
-                    if (idx !== -1) preference[name] = parseFloat(row[idx]) || 1.0;
-                });
-            } else if (enemy_champions.includes(firstCol)) {
+            if (enemy_champions.includes(firstCol)) {
                 banData[firstCol] = {};
                 my_full_pool.forEach(name => {
                     const idx = headers.indexOf(name);
@@ -114,8 +122,8 @@ function resolve_input(user_input) {
 // 4. 별점 계산
 // =============================================================================================
 function score_to_stars(score, max_stars = 2.0) {
-    let stars = Math.round(((score - 1) / (3 - 1)) * (max_stars * 1.5)) + 1;
-    return "★".repeat(Math.max(1, stars));
+    let stars = Math.round(((score - 1) / (5 - 1)) * (max_stars * 3.5)) + 1;
+    return "★".repeat(Math.min(5, Math.max(1, stars)));
 }
 
 function colorize(champ) {
@@ -152,11 +160,17 @@ inputEl.addEventListener('input', (e) => {
             my_full_pool.forEach(name => {
                 let base = matchUps[name];
                 if (base > 0) {
-                    let final = base * (preference[name] || 1.0);
-                    scores.push({ name, final });
+                    let pref = preference[name] || 1.0;
+                    let final = base * pref; 
+                    scores.push({ name, final, pref });
                 }
             });
-            scores.sort((a, b) => b.final - a.final);
+            
+            // 1순위: 최종 점수 내림차순, 2순위: 선호도 내림차순 정렬
+            scores.sort((a, b) => {
+                if (b.final !== a.final) return b.final - a.final;
+                return b.pref - a.pref;
+            });
             
             scores.slice(0, 5).forEach(item => {
                 html += `<div class="result-row">
@@ -176,11 +190,18 @@ inputEl.addEventListener('input', (e) => {
                 if (banData[e]?.[name]) { sum += banData[e][name]; count++; }
             }
             if (count === enemies.length) {
-                let final = (sum / count) * (preference[name] || 1.0);
-                common.push({ name, final });
+                let avg = sum / count;
+                let pref = preference[name] || 1.0;
+                let final = avg * pref;
+                common.push({ name, final, pref });
             }
         });
-        common.sort((a, b) => b.final - a.final);
+        
+        // 공통 추천도 정렬 로직 동일하게 적용
+        common.sort((a, b) => {
+            if (b.final !== a.final) return b.final - a.final;
+            return b.pref - a.pref;
+        });
         
         common.slice(0, 5).forEach(item => {
             html += `<div class="result-row">
