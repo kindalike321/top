@@ -7,8 +7,10 @@
     <style>
         body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #121212; color: #e0e0e0; }
         input { width: 100%; padding: 12px; background-color: #1e1e1e; color: #ffffff; border: 1px solid #333; border-radius: 4px; box-sizing: border-box; }
-        .ad-span { color:white; background-color:#ff7f7f; padding:2px 8px; border-radius:4px; font-weight:bold; margin-right: 15px; display: inline-block; min-width: 80px; text-align: center; }
-        .ap-span { color:white; background-color:#1f77b4; padding:2px 8px; border-radius:4px; margin-right: 15px; display: inline-block; min-width: 80px; text-align: center; }
+        
+        .ad-span { color: #ffffff !important; background-color: #ff7f7f; padding: 2px 5px; border-radius: 4px; font-weight: bold; margin-right: 15px; display: inline-block; min-width: 65px; text-align: center; }
+        .ap-span { color: #ffffff !important; background-color: #1f77b4; padding: 2px 5px; border-radius: 4px; font-weight: bold; margin-right: 15px; display: inline-block; min-width: 65px; text-align: center; }
+        
         .warning { color: #ff6b6b; margin: 10px 0; font-weight: bold; }
         .enemy-header { font-size: 1.7em; font-weight: bold; margin-top: 30px; }
         .enemy-sub { font-size: 0.6em; color: gray; margin-left: 5px; }
@@ -20,7 +22,7 @@
 </head>
 <body>
 
-<h1>탑 후픽 추천받아요1</h1>
+<h1>탑 후픽 추천받아요</h1>
 <input type="text" id="enemyInput" placeholder="예: 가렌 다리우스 ㄹㄴㅌ" autocomplete="off">
 <div id="warningArea" class="warning"></div>
 <div id="results"></div>
@@ -63,12 +65,10 @@ Papa.parse("banData - 시트1.csv", {
         const data = results.data;
         if (!data || data.length < 1) return;
         const headers = data[0].map(h => h ? h.trim() : "");
-
         for (let i = 1; i < data.length; i++) {
             const row = data[i];
             const firstCol = row[0] ? row[0].trim() : "";
             if (!firstCol) continue;
-
             if (firstCol === "선호도") {
                 my_full_pool.forEach(name => {
                     const idx = headers.indexOf(name);
@@ -135,15 +135,12 @@ inputEl.addEventListener('input', (e) => {
     const raw_inputs = e.target.value.split(/\s+/).filter(x => x.trim());
     let enemies = [];
     let warnings = [];
-
     raw_inputs.forEach(r => {
         let resolved = resolve_input(r);
         if (resolved) enemies.push(resolved);
         else warnings.push(`'${r}' 는 제대로 된 이름이 아니에요 ;ㅅ; `);
     });
-
     warningEl.innerHTML = warnings.join("<br>");
-
     if (enemies.length === 0) { resultEl.innerHTML = ""; return; }
 
     let html = "<hr><h2>챔프별 카운터 추천</h2>";
@@ -183,8 +180,7 @@ inputEl.addEventListener('input', (e) => {
                 sum += s;
             }
             if (possible) {
-                let avgBase = sum / enemies.length;
-                let final = avgBase * (preference[name] || 1.0);
+                let final = (sum / enemies.length) * (preference[name] || 1.0);
                 common.push({ name, final });
             }
         });
