@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>123142천받아요</title>
+    <title>TOP</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #121212; color: #ffffff; }
@@ -82,6 +82,9 @@ Papa.parse("banData - 시트1.csv", {
     }
 });
 
+// =============================================================================================
+// 2. 초성 변환
+// =============================================================================================
 const CHOSUNG_LIST = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 function get_chosung(word) {
     let res = "";
@@ -94,6 +97,9 @@ function get_chosung(word) {
     return res;
 }
 
+// =============================================================================================
+// 3. 입력 처리
+// =============================================================================================
 function resolve_input(user_input) {
     user_input = user_input.trim();
     if (!user_input) return null;
@@ -104,17 +110,23 @@ function resolve_input(user_input) {
     return null;
 }
 
+// =============================================================================================
+// 4. 별점 계산
+// =============================================================================================
 function score_to_stars(score, max_stars = 2.0) {
-    let stars = Math.round(((score - 1) / (3 - 1)) * (max_stars * 3.5)) + 1;
+    let stars = Math.round(((score - 1) / (3 - 1)) * (max_stars * 1.5)) + 1;
     return "★".repeat(Math.max(1, stars));
 }
 
 function colorize(champ) {
     const isAD = my_champions.AD.includes(champ);
-    const bgColor = isAD ? "#FF0000" : "#1f77b4";
+    const bgColor = isAD ? "#D32F2F" : "#1976D2";
     return `<span style="display: inline-block; width: 80px; background-color: ${bgColor}; color: #ffffff; padding: 4px 10px; border-radius: 4px; font-weight: bold; text-align: center; opacity: 1; visibility: visible;">${champ}</span>`;
 }
 
+// =============================================================================================
+// 5. 메인 로직 (이벤트 리스너)
+// =============================================================================================
 const inputEl = document.getElementById('enemyInput');
 const resultEl = document.getElementById('results');
 const warningEl = document.getElementById('warningArea');
