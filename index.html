@@ -5,64 +5,24 @@
     <title>탑 후픽 추천받아요</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        body { 
-            font-family: sans-serif; 
-            max-width: 800px; 
-            margin: 20px auto; 
-            padding: 20px; 
-            line-height: 1.6; 
-            background-color: #121212; 
-            color: #e0e0e0; 
-        }
-        h1 { color: #ffffff; text-align: center; margin-bottom: 30px; }
-        input { 
-            width: 100%; 
-            padding: 15px; 
-            font-size: 1.2em; 
-            border: 2px solid #333; 
-            border-radius: 8px; 
-            box-sizing: border-box; 
-            background-color: #1e1e1e; 
-            color: #ffffff; 
-            margin-bottom: 20px;
-            outline: none;
-        }
-        input:focus { border-color: #03dac6; }
-        
-        .ad-label { color:white; background-color:#cc4b4b; padding:6px 10px; border-radius:4px; font-weight:bold; display:inline-block; min-width: 100px; text-align: center; }
-        .ap-label { color:white; background-color:#34678b; padding:6px 10px; border-radius:4px; font-weight:bold; display:inline-block; min-width: 100px; text-align: center; }
-        
-        .enemy-header { font-size: 1.8em; font-weight: bold; margin-top: 30px; color: #bb86fc; }
-        .enemy-sub { font-size: 0.7em; color: #b0b0b0; font-weight: normal; margin-left: 10px; }
-        
-        .star-row { 
-            margin: 15px 0; 
-            display: flex; 
-            align-items: center; 
-            background: #1d1d1d; 
-            padding: 10px; 
-            border-radius: 6px; 
-        }
-        .stars { 
-            color: #ffd700; 
-            margin-left: 20px; 
-            letter-spacing: 2px; 
-            font-size: 1.3em; 
-            text-shadow: 0 0 8px rgba(255, 215, 0, 0.6); /* 별에서 빛나게 효과 */
-        }
-        
-        hr { border: 0; border-top: 1px solid #333; margin: 40px 0; }
-        h3 { color: #03dac6; border-left: 5px solid #03dac6; padding-left: 15px; margin-top: 50px; }
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #121212; color: #e0e0e0; }
+        input { width: 100%; padding: 12px; background-color: #1e1e1e; color: #ffffff; border: 1px solid #333; }
+        .ad-label { color:white; background-color:#cc4b4b; padding:2px 6px; margin: 2px; display:inline-block; min-width: 80px; text-align: center; }
+        .ap-label { color:white; background-color:#34678b; padding:2px 6px; margin: 2px; display:inline-block; min-width: 80px; text-align: center; }
+        .enemy-header { font-size: 1.5em; font-weight: bold; margin-top: 20px; color: #bb86fc; }
+        .star-row { margin: 10px 0; font-size: 1.2em; }
+        .stars { color: #ffd700; margin-left: 10px; letter-spacing: 2px; }
+        hr { border: 0; border-top: 1px dashed #444; margin: 20px 0; }
     </style>
 </head>
 <body>
 
-<h1>TOP COUNTER PICKER</h1>
-<input type="text" id="enemyInput" placeholder="상대 챔피언 입력 (예: 가렌 다리우스 ㄹㄴㅌ)" autocomplete="off">
+<h1>탑 후픽 추천받아요</h1>
+<input type="text" id="enemyInput" placeholder="상대 입력 (예: 가렌 다리우스)">
 <div id="results"></div>
 
 <script>
-// [데이터 설정]
+// 딱 24명만 허용
 const my_champions = {
     "AD": ["가렌", "다리우스", "나서스", "베인", "세트", "스카너", "암베사", "우르곳", "이렐리아", "일라오이", "자르반", "잭스"],
     "AP": ["그웬", "라이즈", "럼블", "말파이트", "모데카이저", "바루스", "브랜드", "신지드", "에코", "오로라", "케넨", "티모"]
@@ -84,10 +44,8 @@ let preference = {};
 
 Papa.parse("banData - 시트1.csv", {
     download: true,
-    header: false, 
     complete: function(results) {
         const data = results.data;
-        if (!data || data.length === 0) return;
         const headers = data[0].map(h => h ? h.trim() : "");
         for (let i = 1; i < data.length; i++) {
             const row = data[i];
@@ -109,27 +67,17 @@ Papa.parse("banData - 시트1.csv", {
     }
 });
 
-// [핵심: 별점 뻥튀기 로직]
-function getStarString(score, isCommon = false) {
+// 별점 6~8개까지 뻥튀기하는 로직
+function getStarString(score) {
     if (score <= 0) return "";
-    
-    // 가중치를 대폭 늘림 (단일 추천은 최대 별 7개 타겟, 공통은 최대 5개 타겟)
-    let max_stars_weight = isCommon ? 4.0 : 6.0; 
-    
-    // 파이썬 공식 적용: round((점수-1)/(3-1) * 가중치) + 1
-    // 점수가 3점 만점이고 선호도가 1.2면 score가 3.6까지 나올 수 있음
-    let starCount = Math.round(((score - 1) / (3 - 1)) * max_stars_weight) + 1;
-    
-    // 최소 1개, 최대 8개까지 제한
-    starCount = Math.max(1, Math.min(8, starCount));
-    
-    return "★".repeat(starCount);
+    // 가중치 6.0으로 대폭 상향
+    let starCount = Math.round(((score - 1) / (3 - 1)) * 6.0) + 1;
+    return "★".repeat(Math.max(1, Math.min(10, starCount)));
 }
 
 function resolve_input(user_input) {
     const CHOSUNG_LIST = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
     user_input = user_input.trim();
-    if (!user_input) return null;
     if (enemy_champions.includes(user_input)) return user_input;
     const get_chosung = (word) => {
         let res = "";
@@ -141,9 +89,7 @@ function resolve_input(user_input) {
         }
         return res;
     };
-    for (let champ of enemy_champions) {
-        if (get_chosung(champ) === user_input) return champ;
-    }
+    for (let champ of enemy_champions) { if (get_chosung(champ) === user_input) return champ; }
     return null;
 }
 
@@ -153,21 +99,17 @@ const resultEl = document.getElementById('results');
 inputEl.addEventListener('input', (e) => {
     const raw_inputs = e.target.value.split(/\s+/).filter(x => x.trim());
     let enemies = [];
-    raw_inputs.forEach(r => {
-        let resolved = resolve_input(r);
-        if (resolved) enemies.push(resolved);
-    });
+    raw_inputs.forEach(r => { let resolved = resolve_input(r); if (resolved) enemies.push(resolved); });
 
     if (enemies.length === 0) { resultEl.innerHTML = ""; return; }
     
     let html = "";
     enemies.forEach(e => {
-        html += `<div class="enemy-header">${e} <span class="enemy-sub">상대 추천 리스트</span></div>`;
+        html += `<div class="enemy-header">${e} 에게는...</div>`;
         let matchUps = banData[e];
-        if (!matchUps) {
-            html += "<div>데이터 없음</div>";
-        } else {
+        if (matchUps) {
             let scores = [];
+            // 여기서 한 번 더 my_full_pool에 있는 놈인지 체크해서 유령 데이터 박멸
             my_full_pool.forEach(name => {
                 let base = matchUps[name] || 0;
                 if (base > 0) {
@@ -177,38 +119,31 @@ inputEl.addEventListener('input', (e) => {
             });
             scores.sort((a, b) => b.final - a.final);
             scores.slice(0, 5).forEach(item => {
-                const labelClass = my_champions.AD.includes(item.name) ? "ad-label" : "ap-label";
-                html += `<div class="star-row">
-                            <span class="${labelClass}">${item.name}</span>
-                            <span class="stars">${getStarString(item.final, false)}</span>
-                         </div>`;
+                const label = my_champions.AD.includes(item.name) ? "ad-label" : "ap-label";
+                html += `<div class="star-row"><span class="${label}">${item.name}</span><span class="stars">${getStarString(item.final)}</span></div>`;
             });
         }
     });
 
     if (enemies.length > 1) {
-        html += "<hr><h3>공통 카운터 (교집합)</h3>";
+        html += "<hr><h3>공통 카운터</h3>";
         let common = [];
         my_full_pool.forEach(name => {
-            let sum = 0; let possible = true;
+            let sum = 0, possible = true;
             for (let e of enemies) {
                 let s = banData[e]?.[name] || 0;
                 if (s <= 0) { possible = false; break; }
                 sum += s;
             }
             if (possible) {
-                let avg = sum / enemies.length;
-                let final = avg * (preference[name] || 1.0);
+                let final = (sum / enemies.length) * (preference[name] || 1.0);
                 common.push({ name, final });
             }
         });
         common.sort((a, b) => b.final - a.final);
         common.slice(0, 5).forEach(item => {
-            const labelClass = my_champions.AD.includes(item.name) ? "ad-label" : "ap-label";
-            html += `<div class="star-row">
-                        <span class="${labelClass}">${item.name}</span>
-                        <span class="stars">${getStarString(item.final, true)}</span>
-                     </div>`;
+            const label = my_champions.AD.includes(item.name) ? "ad-label" : "ap-label";
+            html += `<div class="star-row"><span class="${label}">${item.name}</span><span class="stars">${getStarString(item.final)}</span></div>`;
         });
     }
     resultEl.innerHTML = html;
