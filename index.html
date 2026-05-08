@@ -2,24 +2,24 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>top</title>
+    <title>탑 후픽 추천받아요</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #121212; color: #e0e0e0; }
+        body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #121212; color: #ffffff; }
         input { width: 100%; padding: 12px; background-color: #1e1e1e; color: #ffffff; border: 1px solid #333; border-radius: 4px; box-sizing: border-box; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
-        td { padding: 8px 0; vertical-align: middle; }
-        .name-col { width: 110px; }
-        .star-col { width: auto; overflow: hidden; }
-
-        .ad-span { color: white !important; background-color: #ff7f7f; padding: 4px 10px; border-radius: 4px; font-weight: bold; display: inline-block; width: 80px; text-align: center; }
-        .ap-span { color: white !important; background-color: #1f77b4; padding: 4px 10px; border-radius: 4px; font-weight: bold; display: inline-block; width: 80px; text-align: center; }
+        /* 이름 칸 고정 및 글자색 강제 */
+        .name-wrapper { display: inline-block; width: 110px; margin-right: 10px; }
+        
+        /* AD는 빨간 배경에 흰색 글자, AP는 파란 배경에 흰색 글자 - 확실하게 보임 */
+        .ad-span { color: #ffffff !important; background-color: #b30000 !important; padding: 4px 10px; border-radius: 4px; font-weight: bold; display: inline-block; width: 80px; text-align: center; }
+        .ap-span { color: #ffffff !important; background-color: #0055aa !important; padding: 4px 10px; border-radius: 4px; font-weight: bold; display: inline-block; width: 80px; text-align: center; }
         
         .warning { color: #ff6b6b; margin: 10px 0; font-weight: bold; }
-        .enemy-header { font-size: 1.6em; font-weight: bold; margin-top: 30px; color: #fff; }
-        .enemy-sub { font-size: 0.6em; color: gray; margin-left: 5px; }
-        .stars { color: #ffd700; letter-spacing: 2px; font-size: 1.2em; word-break: break-all; }
+        .enemy-header { font-size: 1.6em; font-weight: bold; margin-top: 30px; color: #ffffff; }
+        .enemy-sub { font-size: 0.6em; color: #aaaaaa; margin-left: 5px; }
+        .stars { color: #ffd700; letter-spacing: 2px; font-size: 1.2em; }
+        .result-row { margin: 12px 0; display: flex; align-items: center; }
         hr { border: 0; border-top: 1px solid #444; margin: 30px 0; }
         h2 { font-size: 1.5em; color: #ffffff; }
     </style>
@@ -152,14 +152,12 @@ inputEl.addEventListener('input', (e) => {
             });
             scores.sort((a, b) => b.final - a.final);
             
-            html += "<table>";
             scores.slice(0, 5).forEach(item => {
-                html += `<tr>
-                            <td class="name-col">${colorize(item.name)}</td>
-                            <td class="star-col"><span class="stars">${score_to_stars(item.final)}</span></td>
-                         </tr>`;
+                html += `<div class="result-row">
+                            <span class="name-wrapper">${colorize(item.name)}</span>
+                            <span class="stars">${score_to_stars(item.final)}</span>
+                         </div>`;
             });
-            html += "</table>";
         }
     });
 
@@ -178,14 +176,12 @@ inputEl.addEventListener('input', (e) => {
         });
         common.sort((a, b) => b.final - a.final);
         
-        html += "<table>";
         common.slice(0, 5).forEach(item => {
-            html += `<tr>
-                        <td class="name-col">${colorize(item.name)}</td>
-                        <td class="star-col"><span class="stars">${score_to_stars(item.final, 0.9)}</span></td>
-                     </tr>`;
+            html += `<div class="result-row">
+                        <span class="name-wrapper">${colorize(item.name)}</span>
+                        <span class="stars">${score_to_stars(item.final, 0.9)}</span>
+                     </div>`;
         });
-        html += "</table>";
     }
     resultEl.innerHTML = html;
 });
