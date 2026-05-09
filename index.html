@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>탑 후픽 추천받아요</title>
+    <title>TOP | 05/09, 13:34 </title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #121212; color: #ffffff; }
@@ -20,7 +20,7 @@
 <body>
 
 <h1>탑 후픽 추천받아요</h1>
-<input type="text" id="enemyInput" placeholder="예: 가렌 다리우스 ㄹㄴㅌ" autocomplete="off">
+<input type="text" id="enemyInput" placeholder="예: 가렌 다리우스 ㄹㅂ (ㄼ)" autocomplete="off">
 <div id="warningArea" class="warning"></div>
 <div id="results"></div>
 
@@ -59,7 +59,6 @@ Papa.parse("banData - 시트1.csv", {
         const data = results.data;
         if (!data || data.length < 1) return;
         const headers = data[0].map(h => h ? h.trim() : "");
-
         for (let i = 1; i < data.length; i++) {
             const firstCol = data[i][0] ? data[i][0].trim() : "";
             if (firstCol.includes("선호도")) {
@@ -72,7 +71,6 @@ Papa.parse("banData - 시트1.csv", {
                 });
             }
         }
-
         for (let i = 1; i < data.length; i++) {
             const row = data[i];
             const firstCol = row[0] ? row[0].trim() : "";
@@ -91,9 +89,24 @@ Papa.parse("banData - 시트1.csv", {
 });
 
 // =============================================================================================
-// 2. 초성 변환
+// 2. 초성 변환 및 겹받침 분해 로직
 // =============================================================================================
 const CHOSUNG_LIST = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
+
+// 겹받침/복합자음 분해 맵
+const COMPLEX_CONSONANTS = {
+    "ㄳ": "ㄱㅅ", "ㄵ": "ㄴㅈ", "ㄶ": "ㄴㅎ", "ㄺ": "ㄹㄱ", "ㄻ": "ㄹㅁ", "ㄼ": "ㄹㅂ", 
+    "ㄽ": "ㄹㅅ", "ㄾ": "ㄹㅌ", "ㄿ": "ㄹㅍ", "ㅀ": "ㄹㅎ", "ㅄ": "ㅂㅅ"
+};
+
+function decompose_input(text) {
+    let result = "";
+    for (let char of text) {
+        result += COMPLEX_CONSONANTS[char] || char;
+    }
+    return result;
+}
+
 function get_chosung(word) {
     let res = "";
     for (let char of word) {
@@ -111,9 +124,14 @@ function get_chosung(word) {
 function resolve_input(user_input) {
     user_input = user_input.trim();
     if (!user_input) return null;
+    
+    // 1. 완성형 이름 대조
     if (enemy_champions.includes(user_input)) return user_input;
+    
+    // 2. 초성 대조 (입력받은 겹받침 분해 후 비교)
+    const decomposed = decompose_input(user_input);
     for (let champ of enemy_champions) {
-        if (get_chosung(champ) === user_input) return champ;
+        if (get_chosung(champ) === decomposed) return champ;
     }
     return null;
 }
@@ -166,9 +184,9 @@ inputEl.addEventListener('input', (e) => {
                 }
             });
             
-            // 1순위: 최종 점수 내림차순, 2순위: 선호도 내림차순 정렬
+            // 정렬: 1순위 최종 점수, 2순위 선호도
             scores.sort((a, b) => {
-                if (b.final !== a.final) return b.final - a.final;
+                if (Math.abs(b.final - a.final) > 0.001) return b.final - a.final;
                 return b.pref - a.pref;
             });
             
@@ -197,9 +215,8 @@ inputEl.addEventListener('input', (e) => {
             }
         });
         
-        // 공통 추천도 정렬 로직 동일하게 적용
         common.sort((a, b) => {
-            if (b.final !== a.final) return b.final - a.final;
+            if (Math.abs(b.final - a.final) > 0.001) return b.final - a.final;
             return b.pref - a.pref;
         });
         
