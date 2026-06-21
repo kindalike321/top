@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>TOP | 05/09, 23:25 </title>
+    <title>TOP | 06/21, 14:39 </title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #121212; color: #ffffff; }
@@ -12,7 +12,9 @@
         .info-msg { color: #4dabf7; margin: 10px 0; font-size: 0.9em; font-style: italic; }
         .enemy-header { font-size: 1.6em; font-weight: bold; margin-top: 30px; color: #ffffff; }
         .enemy-sub { font-size: 0.6em; color: #888888; margin-left: 5px; }
-        .stars { color: #ffd700; letter-spacing: 2px; font-size: 1.2em; vertical-align: middle; }
+        .bar-track { display: inline-block; width: 240px; height: 20px; background-color: #2a2a2a; border-radius: 4px; vertical-align: middle; overflow: hidden; }
+        .bar-fill { display: block; height: 100%; background-color: #4dabf7; border-radius: 4px; }
+        .bar-score { margin-left: 10px; font-size: 0.95em; font-weight: bold; color: #cccccc; vertical-align: middle; }
         .result-row { margin: 12px 0; display: block; }
         hr { border: 0; border-top: 1px solid #444; margin: 30px 0; }
         h2 { font-size: 1.5em; color: #ffffff; }
@@ -48,6 +50,7 @@ const enemy_champions = [
 
 let banData = {};
 let preference = {}; 
+let globalMax = 1; // 시트 전체에서 나올 수 있는 실제 최고점 (base × pref). CSV 로드 후 자동 계산.
 
 Papa.parse("banData - 시트1.csv", {
     download: true,
@@ -79,6 +82,16 @@ Papa.parse("banData - 시트1.csv", {
                         if (!isNaN(val)) banData[firstCol][name] = val;
                     }
                 });
+            }
+        }
+
+        // 시트 전체를 훑어 실제 최고점(base × pref)을 자동 계산 -> 막대 길이의 100% 기준
+        globalMax = 1;
+        for (let enemy in banData) {
+            for (let name in banData[enemy]) {
+                let pref = preference[name] || 1.0;
+                let val = banData[enemy][name] * pref;
+                if (val > globalMax) globalMax = val;
             }
         }
     }
@@ -144,9 +157,12 @@ function resolve_input(user_input) {
 // =============================================================================================
 // 4. 공통 함수 (별점, 색상)
 // =============================================================================================
-function score_to_stars(score, max_stars = 2.0) {
-    let stars = Math.round(((score - 1) / (5 - 1)) * (max_stars * 1.2)) + 1;
-    return "★".repeat(Math.min(6, Math.max(1, stars)));
+function score_to_bar(score, champ) {
+    // 절대 스케일: 시트 전체 실측 최고점(globalMax)을 100%로 잡아 막대 길이 결정.
+    // 다 짧으면 "좋은 픽 없음"이 길이로 드러남.
+    let pct = Math.min(100, Math.round((score / globalMax) * 100));
+    let fillColor = my_champions.AD.includes(champ) ? "#D32F2F" : "#1976D2";
+    return `<span class="bar-track"><span class="bar-fill" style="width:${pct}%; background-color:${fillColor}"></span></span><span class="bar-score">${score.toFixed(1)}</span>`;
 }
 
 function colorize(champ) {
@@ -208,7 +224,7 @@ inputEl.addEventListener('input', (e) => {
             scores.slice(0, 5).forEach(item => {
                 html += `<div class="result-row">
                             <span class="name-wrapper">${colorize(item.name)}</span>
-                            <span class="stars">${score_to_stars(item.final)}</span>
+                            <span class="stars">${score_to_bar(item.final, item.name)}</span>
                          </div>`;
             });
         }
@@ -238,7 +254,7 @@ inputEl.addEventListener('input', (e) => {
         common.slice(0, 5).forEach(item => {
             html += `<div class="result-row">
                         <span class="name-wrapper">${colorize(item.name)}</span>
-                        <span class="stars">${score_to_stars(item.final, 0.9)}</span>
+                        <span class="stars">${score_to_bar(item.final, item.name)}</span>
                      </div>`;
         });
     }
