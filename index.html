@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>TOP | 06/21, 14:39 </title>
+    <title>TOP | 06/22, 20:20 </title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #121212; color: #ffffff; }
@@ -16,6 +16,10 @@
         .bar-fill { display: block; height: 100%; background-color: #4dabf7; border-radius: 4px; }
         .bar-score { margin-left: 10px; font-size: 0.95em; font-weight: bold; color: #cccccc; vertical-align: middle; }
         .result-row { margin: 12px 0; display: block; }
+        .filter-bar { margin: 14px 0 4px; }
+        .filter-btn { padding: 8px 18px; margin-right: 8px; background-color: #1e1e1e; color: #cccccc; border: 1px solid #333; border-radius: 4px; cursor: pointer; font-size: 0.95em; font-weight: bold; }
+        .filter-btn:hover { background-color: #2a2a2a; }
+        .filter-btn.active { background-color: #4dabf7; color: #ffffff; border-color: #4dabf7; }
         hr { border: 0; border-top: 1px solid #444; margin: 30px 0; }
         h2 { font-size: 1.5em; color: #ffffff; }
     </style>
@@ -24,6 +28,11 @@
 
 <h1>탑 후픽 추천받아요</h1>
 <input type="text" id="enemyInput" placeholder="예: 가렌 다리우스 ㄹㄴㅌ" autocomplete="off">
+<div class="filter-bar">
+    <button class="filter-btn active" data-filter="ALL">ALL</button>
+    <button class="filter-btn" data-filter="AD">AD</button>
+    <button class="filter-btn" data-filter="AP">AP</button>
+</div>
 <div id="infoArea" class="info-msg"></div>
 <div id="warningArea" class="warning"></div>
 <div id="results"></div>
@@ -206,7 +215,91 @@ const inputEl = document.getElementById('enemyInput');
 const resultEl = document.getElementById('results');
 const warningEl = document.getElementById('warningArea');
 const infoEl = document.getElementById('infoArea');
+const filterBtns = document.querySelectorAll('.filter-btn');
 
+let currentFilter = "ALL";   // "ALL" | "AD" | "AP"
+let currentEnemies = [];     // 마지막으로 해석된 적 챔프 목록 (필터 전환 시 재사용)
+
+// 현재 필터에 맞는 내 챔프 풀 반환
+function pool_for_filter() {
+    if (currentFilter === "AD") return my_champions.AD;
+    if (currentFilter === "AP") return my_champions.AP;
+    return my_full_pool;
+}
+
+// enemies + currentFilter 기준으로 결과를 그림 (입력/버튼 양쪽에서 공통 호출)
+function render() {
+    const pool = pool_for_filter();
+
+    if (currentEnemies.length === 0) { resultEl.innerHTML = ""; return; }
+
+    let html = "<hr><h2>챔프별 카운터 추천</h2>";
+    currentEnemies.forEach(e => {
+        html += `<div class="enemy-header">${e} <span class="enemy-sub">에게는요...</span></div>`;
+        let matchUps = banData[e];
+        if (matchUps) {
+            let scores = [];
+            pool.forEach(name => {
+                let base = matchUps[name];
+                if (base > 0) {
+                    let pref = preference[name] || 1.0;
+                    let final = base * pref; 
+                    scores.push({ name, final, pref });
+                }
+            });
+            
+            scores.sort((a, b) => {
+                if (Math.abs(b.final - a.final) > 0.001) return b.final - a.final;
+                return b.pref - a.pref;
+            });
+            
+            if (scores.length === 0) {
+                html += `<div class="result-row" style="color:#888;">해당 타입 추천 없음</div>`;
+            }
+            scores.slice(0, 5).forEach(item => {
+                html += `<div class="result-row">
+                            <span class="name-wrapper">${colorize(item.name)}</span>
+                            <span class="stars">${score_to_bar(item.final, item.name)}</span>
+                         </div>`;
+            });
+        }
+    });
+
+    if (currentEnemies.length > 1) {
+        html += "<hr><h2>공통 카운터 추천</h2>";
+        let common = [];
+        pool.forEach(name => {
+            let sum = 0, count = 0;
+            for (let e of currentEnemies) {
+                if (banData[e]?.[name]) { sum += banData[e][name]; count++; }
+            }
+            if (count === currentEnemies.length) {
+                let avg = sum / count;
+                let pref = preference[name] || 1.0;
+                let final = avg * pref;
+                common.push({ name, final, pref });
+            }
+        });
+        
+        common.sort((a, b) => {
+            if (Math.abs(b.final - a.final) > 0.001) return b.final - a.final;
+            return b.pref - a.pref;
+        });
+        
+        if (common.length === 0) {
+            html += `<div class="result-row" style="color:#888;">해당 타입 공통 추천 없음</div>`;
+        }
+        common.slice(0, 5).forEach(item => {
+            html += `<div class="result-row">
+                        <span class="name-wrapper">${colorize(item.name)}</span>
+                        <span class="stars">${score_to_bar(item.final, item.name)}</span>
+                     </div>`;
+        });
+    }
+    resultEl.innerHTML = html;
+}
+
+// 입력 해석: 적 챔프 목록과 경고/안내 갱신 후 render 호출
 inputEl.addEventListener('input', (e) => {
     const raw_inputs = e.target.value.split(/\s+/).filter(x => x.trim());
     let enemies = [];
@@ -226,67 +319,18 @@ inputEl.addEventListener('input', (e) => {
     // 영타 안내 및 경고 출력
     infoEl.innerText = englishDetected ? "영문 입력을 한글로 변환하여 검색 중입니다." : "";
     warningEl.innerHTML = warnings.join("<br>");
-    
-    if (enemies.length === 0) { resultEl.innerHTML = ""; return; }
 
-    let html = "<hr><h2>챔프별 카운터 추천</h2>";
-    enemies.forEach(e => {
-        html += `<div class="enemy-header">${e} <span class="enemy-sub">에게는요...</span></div>`;
-        let matchUps = banData[e];
-        if (matchUps) {
-            let scores = [];
-            my_full_pool.forEach(name => {
-                let base = matchUps[name];
-                if (base > 0) {
-                    let pref = preference[name] || 1.0;
-                    let final = base * pref; 
-                    scores.push({ name, final, pref });
-                }
-            });
-            
-            scores.sort((a, b) => {
-                if (Math.abs(b.final - a.final) > 0.001) return b.final - a.final;
-                return b.pref - a.pref;
-            });
-            
-            scores.slice(0, 5).forEach(item => {
-                html += `<div class="result-row">
-                            <span class="name-wrapper">${colorize(item.name)}</span>
-                            <span class="stars">${score_to_bar(item.final, item.name)}</span>
-                         </div>`;
-            });
-        }
+    currentEnemies = enemies;
+    render();
+});
+
+// 필터 버튼: 선택 상태 갱신 후 같은 enemies로 다시 render
+filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        currentFilter = btn.dataset.filter;
+        filterBtns.forEach(b => b.classList.toggle('active', b === btn));
+        render();
     });
-
-    if (enemies.length > 1) {
-        html += "<hr><h2>공통 카운터 추천</h2>";
-        let common = [];
-        my_full_pool.forEach(name => {
-            let sum = 0, count = 0;
-            for (let e of enemies) {
-                if (banData[e]?.[name]) { sum += banData[e][name]; count++; }
-            }
-            if (count === enemies.length) {
-                let avg = sum / count;
-                let pref = preference[name] || 1.0;
-                let final = avg * pref;
-                common.push({ name, final, pref });
-            }
-        });
-        
-        common.sort((a, b) => {
-            if (Math.abs(b.final - a.final) > 0.001) return b.final - a.final;
-            return b.pref - a.pref;
-        });
-        
-        common.slice(0, 5).forEach(item => {
-            html += `<div class="result-row">
-                        <span class="name-wrapper">${colorize(item.name)}</span>
-                        <span class="stars">${score_to_bar(item.final, item.name)}</span>
-                     </div>`;
-        });
-    }
-    resultEl.innerHTML = html;
 });
 </script>
 </body>
