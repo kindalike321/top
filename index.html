@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>TOP | 06/22, 20:20 </title>
+    <title>TOP | 2026:07:05 </title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         body { font-family: sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #121212; color: #ffffff; }
@@ -17,12 +17,13 @@
         .bar-score { margin-left: 10px; font-size: 0.95em; font-weight: bold; color: #cccccc; vertical-align: middle; }
         .result-row { margin: 12px 0; display: block; }
         .filter-bar { margin: 14px 0 4px; }
-        .filter-btn { padding: 8px 18px; margin-right: 8px; background-color: #1e1e1e; color: #cccccc; border: 1px solid #333; border-radius: 4px; cursor: pointer; font-size: 0.95em; font-weight: bold; }
+        .filter-btn { padding: 8px 14px; background-color: #1e1e1e; color: #cccccc; border: 1px solid #333; border-radius: 4px; cursor: pointer; font-size: 0.95em; font-weight: bold; }
         .filter-btn:hover { background-color: #2a2a2a; }
         .filter-btn.active { background-color: #4dabf7; color: #ffffff; border-color: #4dabf7; }
+        .filter-bar { gap: 6px; }
         hr { border: 0; border-top: 1px solid #444; margin: 30px 0; }
         h2 { font-size: 1.5em; color: #ffffff; }
-        .data-status { margin: 8px 0 0; font-size: 0.9em; color: #4dabf7; display: flex; align-items: center; gap: 8px; }
+        .data-status { margin: 0; font-size: 0.85em; color: #4dabf7; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
         .data-status.fresh { color: #51cf66; }
         .data-status.stale { color: #ffa94d; }
         .spinner { width: 13px; height: 13px; border: 2px solid #4dabf7; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.7s linear infinite; }
@@ -32,14 +33,18 @@
 </head>
 <body>
 
-<h1>탑 후픽 추천받아요</h1>
-<input type="text" id="enemyInput" placeholder="예: 가렌 다리우스 ㄹㄴㅌ" autocomplete="off">
-<div class="filter-bar">
-    <button class="filter-btn active" data-filter="ALL">ALL</button>
-    <button class="filter-btn" data-filter="AD">AD</button>
-    <button class="filter-btn" data-filter="AP">AP</button>
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+    <h1 style="margin: 0;">탑 후픽 추천받아요</h1>
+    <div id="dataStatus" class="data-status"></div>
 </div>
-<div id="dataStatus" class="data-status"></div>
+<div style="display: flex; gap: 8px; margin-top: 14px;">
+    <input type="text" id="enemyInput" placeholder="예: 가렌 다리우스 ㄹㄴㅌ" autocomplete="off" style="flex: 1;">
+    <div class="filter-bar" style="margin: 0; display: flex; flex-shrink: 0;">
+        <button class="filter-btn active" data-filter="ALL">ALL</button>
+        <button class="filter-btn" data-filter="AD">AD</button>
+        <button class="filter-btn" data-filter="AP">AP</button>
+    </div>
+</div>
 <div id="infoArea" class="info-msg"></div>
 <div id="warningArea" class="warning"></div>
 <div id="results"></div>
